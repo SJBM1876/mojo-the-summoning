@@ -1,8 +1,8 @@
 // create your User model here
 const { DataTypes } = require('sequelize');
-const sequelize = require('../db/config');
+const db = require('../db/config');
 
-const User = sequelize.define("User", {
+const User = db.define("User", {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -14,3 +14,5 @@ const User = sequelize.define("User", {
     unique: true
   }
 });
+
+module.exports = User;
