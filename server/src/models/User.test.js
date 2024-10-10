@@ -41,6 +41,7 @@ describe('Model Associations', () => {
   });
 
   test('Card belongs to Deck', async () => {
+    await card1.setDeck(deck);
     const card1Deck = await card1.getDeck();
     expect(card1Deck.id).toBe(deck.id);
   });
