@@ -1,16 +1,21 @@
-// create your User model here
 const { DataTypes } = require('sequelize');
 const sequelize = require('../db/config');
 
-const User = sequelize.define("User", {
+const Deck = sequelize.define("Deck", {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true
   },
-  username: {
+  name: {
     type: DataTypes.STRING,
+    allowNull: false
+  },
+  xp: {
+    type: DataTypes.INTEGER,
     allowNull: false,
-    unique: true
+    defaultValue: 0
   }
 });
+
+module.exports = Deck;
