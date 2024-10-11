@@ -1,6 +1,7 @@
 const { describe, test, expect, beforeAll, afterAll } = require('@jest/globals');
 const { User, Deck, Card, Attack } = require('.');
 const db = require('../db/config');
+const { Op } = require('sequelize');
 
 // Define variables in global scope
 let user, deck, card1, card2, attack1, attack2;
@@ -15,6 +16,20 @@ beforeAll(async () => {
   card2 = await Card.create({ name: 'Shield', mojo: 10, stamina: 25, imgUrl: 'http://example.com/shield.jpg' });
   attack1 = await Attack.create({ title: 'Flame Burst', mojoCost: 15, staminaCost: 10 });
   attack2 = await Attack.create({ title: 'Defend', mojoCost: 5, staminaCost: 20 });
+
+  // Create data for eager loading tests
+  const eagerUser = await User.create({ username: 'eageruser' });
+  const eagerDeck = await Deck.create({ name: 'Eager Deck', xp: 50 });
+  await eagerUser.setDeck(eagerDeck);
+
+  const eagerCard1 = await Card.create({ name: 'Eager Card 1', mojo: 30, stamina: 40, imgUrl: 'http://example.com/eagercard1.jpg' });
+  const eagerCard2 = await Card.create({ name: 'Eager Card 2', mojo: 25, stamina: 35, imgUrl: 'http://example.com/eagercard2.jpg' });
+  await eagerDeck.addCards([eagerCard1, eagerCard2]);
+
+  const eagerAttack1 = await Attack.create({ title: 'Eager Attack 1', mojoCost: 10, staminaCost: 15 });
+  const eagerAttack2 = await Attack.create({ title: 'Eager Attack 2', mojoCost: 8, staminaCost: 12 });
+  await eagerCard1.addAttacks([eagerAttack1, eagerAttack2]);
+  await eagerCard2.addAttack(eagerAttack1);
 });
 
 // Clear db after tests
@@ -134,5 +149,60 @@ describe('Attack Model', () => {
 
   test('cannot create an attack without required fields', async () => {
     await expect(Attack.create({ title: 'Incomplete Attack' })).rejects.toThrow();
+  });
+});
+
+describe('Eager Loading', () => {
+  test('User can be loaded with its Deck', async () => {
+    const userWithDeck = await User.findOne({
+      where: { username: 'eageruser' },
+      include: Deck
+    });
+
+    expect(userWithDeck).toBeDefined();
+    expect(userWithDeck.Deck).toBeDefined();
+    expect(userWithDeck.Deck.name).toBe('Eager Deck');
+    expect(userWithDeck.Deck.xp).toBe(50);
+  });
+
+  test('Deck can be loaded with its Cards', async () => {
+    const deckWithCards = await Deck.findOne({
+      where: { name: 'Eager Deck' },
+      include: Card
+    });
+
+    expect(deckWithCards).toBeDefined();
+    expect(deckWithCards.Cards).toBeDefined();
+    expect(deckWithCards.Cards.length).toBe(2);
+    expect(deckWithCards.Cards[0].name).toBe('Eager Card 1');
+    expect(deckWithCards.Cards[1].name).toBe('Eager Card 2');
+  });
+
+  test('Cards can be loaded with their Attacks', async () => {
+    const cardsWithAttacks = await Card.findAll({
+      where: {
+        name: {
+          [Op.like]: 'Eager Card%'
+        }
+      },
+      include: Attack,
+      order: [['name', 'ASC']]
+    });
+
+    expect(cardsWithAttacks).toBeDefined();
+    expect(cardsWithAttacks.length).toBe(2);
+
+    // Check first card
+    expect(cardsWithAttacks[0].name).toBe('Eager Card 1');
+    expect(cardsWithAttacks[0].Attacks).toBeDefined();
+    expect(cardsWithAttacks[0].Attacks.length).toBe(2);
+    expect(cardsWithAttacks[0].Attacks[0].title).toBe('Eager Attack 1');
+    expect(cardsWithAttacks[0].Attacks[1].title).toBe('Eager Attack 2');
+
+    // Check second card
+    expect(cardsWithAttacks[1].name).toBe('Eager Card 2');
+    expect(cardsWithAttacks[1].Attacks).toBeDefined();
+    expect(cardsWithAttacks[1].Attacks.length).toBe(1);
+    expect(cardsWithAttacks[1].Attacks[0].title).toBe('Eager Attack 1');
   });
 });
