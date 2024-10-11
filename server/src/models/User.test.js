@@ -63,12 +63,76 @@ describe('Model Associations', () => {
   });
 });
 
-describe('User', () => {
+describe('User Model', () => {
   test('has an id', async () => {
     expect(user).toHaveProperty('id');
   });
 
   test('has the correct username', async () => {
     expect(user.username).toBe('gandalf');
+  });
+
+  test('cannot create a user without a username', async () => {
+    await expect(User.create({})).rejects.toThrow();
+  });
+
+  test('cannot create two users with the same username', async () => {
+    await expect(User.create({ username: 'gandalf' })).rejects.toThrow();
+  });
+});
+
+describe('Deck Model', () => {
+  test('can create a deck', async () => {
+    const newDeck = await Deck.create({ name: 'Test Deck', xp: 100 });
+    expect(newDeck.name).toBe('Test Deck');
+    expect(newDeck.xp).toBe(100);
+    expect(newDeck.id).toBeDefined();
+  });
+
+  test('cannot create a deck without a name', async () => {
+    await expect(Deck.create({ xp: 100 })).rejects.toThrow();
+  });
+
+  test('xp defaults to 0 if not provided', async () => {
+    const newDeck = await Deck.create({ name: 'Zero XP Deck' });
+    expect(newDeck.xp).toBe(0);
+  });
+});
+
+describe('Card Model', () => {
+  test('can create a card', async () => {
+    const newCard = await Card.create({
+      name: 'Test Card',
+      mojo: 10,
+      stamina: 20,
+      imgUrl: 'http://example.com/testcard.jpg'
+    });
+    expect(newCard.name).toBe('Test Card');
+    expect(newCard.mojo).toBe(10);
+    expect(newCard.stamina).toBe(20);
+    expect(newCard.imgUrl).toBe('http://example.com/testcard.jpg');
+    expect(newCard.id).toBeDefined();
+  });
+
+  test('cannot create a card without required fields', async () => {
+    await expect(Card.create({ name: 'Incomplete Card' })).rejects.toThrow();
+  });
+});
+
+describe('Attack Model', () => {
+  test('can create an attack', async () => {
+    const newAttack = await Attack.create({
+      title: 'Test Attack',
+      mojoCost: 5,
+      staminaCost: 10
+    });
+    expect(newAttack.title).toBe('Test Attack');
+    expect(newAttack.mojoCost).toBe(5);
+    expect(newAttack.staminaCost).toBe(10);
+    expect(newAttack.id).toBeDefined();
+  });
+
+  test('cannot create an attack without required fields', async () => {
+    await expect(Attack.create({ title: 'Incomplete Attack' })).rejects.toThrow();
   });
 });
